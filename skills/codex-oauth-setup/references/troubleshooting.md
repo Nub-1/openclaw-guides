@@ -81,6 +81,40 @@ openclaw secrets audit --check
 **Cause:** Symlink ที่สร้างไว้ใน container rootfs หายเมื่อ restart  
 **Fix:** เพิ่ม restore script ใน `/boot/config/go` (Unraid) หรือ mount persistent volume
 
+## ❌ `SyntaxError: f-string: unmatched '['` ใน `python3 -c "..."` (2026-06-22)
+
+**Symptom:** รัน verify หลัง push ขึ้น GitHub → inline python fail ทันที
+
+```bash
+# ❌ FAIL — escape hell
+curl -s "https://api.github.com/..." | python3 -c "import sys, json; d=json.load(sys.stdin); print(f\"sha: {d[\"sha\"][:10]}\")"
+#                              SyntaxError: f-string: unmatched '['
+```
+
+**Cause:** เมื่อห่อ Python script ใน bash string ด้วย double quotes `"..."` แล้วข้างในมี escaped double quotes `\"...\"` → Python parser คิดว่า f-string จบที่ `{d[` ก่อน (เพราะ `\"` ถูก bash แปลงเป็น `"` ก่อน Python อ่าน)
+
+**Fix 1 — แยกตัวแปรก่อนค่อย print (แนะนำ, เร็วสุด):**
+```bash
+python3 -c "import sys, json; d=json.load(sys.stdin); sha=d['sha'][:10]; print('sha:', sha)"
+```
+
+**Fix 2 — ใช้ `.format()` แทน f-string:**
+```bash
+python3 -c "import sys, json; d=json.load(sys.stdin); print('sha: {}'.format(d['sha'][:10]))"
+```
+
+**Fix 3 — heredoc (ไม่มี escape issue เลย):**
+```bash
+curl -s "https://api.github.com/..." | python3 << 'EOF'
+import sys, json
+d = json.load(sys.stdin)
+sha = d["sha"][:10]
+print(f"sha: {sha}")
+EOF
+```
+
+**Lesson:** ถ้าจะรัน Python `-c` ผ่าน bash → **ห้ามใช้ f-string ที่มี nested quote** ใช้ heredoc หรือ `.format()` ดีกว่า
+
 ## 🔗 Related Docs
 
 - [OpenClaw OpenAI Provider docs](https://docs.openclaw.ai/providers/openai)
