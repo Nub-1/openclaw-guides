@@ -1,0 +1,43 @@
+// Patch template: เพิ่ม OpenAI provider + ChatGPT OAuth profile ให้ OpenClaw-Mew
+// ใช้ ChatGPT Subscription (Plus/Pro) แทน API key → ประหยัด API cost
+// Verified against OpenClaw docs (docs.openclaw.ai/providers/openai)
+// Date: 2026-06-22 (first deploy)
+{
+  // เพิ่ม OpenAI provider ที่ใช้ ChatGPT OAuth (subscription)
+  // baseUrl ชี้ไปที่ Codex backend API ของ ChatGPT
+  // api adapter "openai-chatgpt-responses" รองรับ ChatGPT OAuth
+  models: {
+    providers: {
+      openai: {
+        baseUrl: "https://chatgpt.com/backend-api/codex",
+        auth: "oauth",
+        api: "openai-chatgpt-responses",
+        agentRuntime: {
+          id: "codex"
+        },
+        models: [
+          {
+            id: "gpt-5.5",
+            name: "GPT-5.5 (ChatGPT Subscription)",
+            contextWindow: 400000
+          }
+        ]
+      }
+    }
+  },
+  // เพิ่ม auth profile สำหรับ ChatGPT OAuth
+  // mode: "oauth" → ใช้ ChatGPT subscription credentials
+  auth: {
+    profiles: {
+      "chatgpt-joe": {
+        provider: "openai",
+        mode: "oauth",
+        displayName: "Joe's ChatGPT Plus"
+      }
+    },
+    // ใส่ profile ใน auth order เพื่อให้ OpenClaw เลือกใช้
+    order: {
+      openai: ["chatgpt-joe"]
+    }
+  }
+}
